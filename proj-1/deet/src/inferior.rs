@@ -5,7 +5,7 @@ use nix::unistd::Pid;
 use std::process::Child;
 use crate::dwarf_data::{DwarfData}; // for milestone3
 use std::collections::HashMap;      // for milestone6
-//use nix::sys::signal::Signal;       // for milestone6
+use nix::sys::signal::Signal;       // for milestone6
 
 #[derive(Clone)]
 pub struct Restorepoint {
@@ -69,48 +69,25 @@ impl Inferior {
         None
     }
 
-    pub fn wake_up(&mut self, _rs_map: &HashMap<usize, Restorepoint>) 
+    pub fn wake_up(&mut self, rs_map: &HashMap<usize, Restorepoint>) 
         -> Result<Status, nix::Error> {
         // In milestone1, you just return Ok(status)
         ptrace::cont(self.pid(), None)?;
         let status = self.wait(None)?;
 
         // For milestone6
-        /* Fail to implement milestone6
         if let Status::Stopped(signal, rip) = status {
-            if !rs_map.is_empty() {
+            if !rs_map.is_empty() { // probabily stopped by SIGINT
                 if let Signal::SIGTRAP = signal {
-                    if let Some(_i) = rs_map.get( &(rip - 1) ) {
-                        println!("breakpoint eq rip");
-                        // step next instruction
-                        ptrace::step(self.pid(), signal).unwrap();
-                        let stat = self.wait(None)?;
-                        if let Status::Stopped(signal, rip) = stat {
-                            if let Signal::SIGTRAP = signal {
-                                // restore 0xcc in the breakpoint location
-                                self.write_byte(rip, 0xcc)?;
-                            }
-                        }
-                        // resume normal execution
-                        ptrace::cont(self.pid(), None)?;
-                        // wait for inferior to stop or terminate
-                        let stat = self.wait(None)?;
-                        if let Status::Stopped(signal, rip) = stat {
-                            if let Some(i) = rs_map.get( &(rip - 1) ) {
-                                if let Signal::SIGTRAP = signal {
-                                    // restore the first byte of instruction we replaced
-                                    self.write_byte(rip, i.orig_byte)?;
-                                }
-                            }
-                            // set %rip = %rip - 1 to rewind the instruction pointer
-                            let mut regs_st = ptrace::getregs(self.pid()).unwrap();
-                            regs_st.rip = (rip - 1) as u64;
-                            ptrace::setregs(self.pid(), regs_st)?;
-                        }
+                    if let Some(i) = rs_map.get( &(rip - 1) ) {
+                        println!("breakpoint at {:#x}", rip-1);
+                        
+                        self.write_byte(i.addr, i.orig_byte)?;
                     } 
                 }
             }
-        }*/
+        }
+        
         Ok(status)
     }
 
@@ -194,7 +171,6 @@ impl Inferior {
         Ok(0)
     }
 
-    /*
     fn write_byte(&mut self, addr: usize, val: u8) -> Result<u8, nix::Error> {
         // for milestone6
         let aligned_addr = self.align_addr_to_word(addr);
@@ -209,7 +185,7 @@ impl Inferior {
             updated_word as *mut std::ffi::c_void,
         )?;
         Ok(orig_byte as u8)
-    }*/
+    }
 
     /// Returns the pid of this inferior.
     pub fn pid(&self) -> Pid {

@@ -31,7 +31,7 @@ impl Debugger {
                 std::process::exit(1);
             }
         };
-        debug_data.print();
+        //debug_data.print(); // for milestone6
 
         let history_path = format!("{}/.deet_history", std::env::var("HOME").unwrap());
         let mut readline = Editor::<()>::new();
@@ -118,14 +118,6 @@ impl Debugger {
                         eprintln!("You need to run a tracee first!");
                     } else {
                         let tracee = obj.unwrap();
-                        if !self.break_list.is_empty() {
-                            tracee.set_breakpoint(
-                                &self.break_list, 
-                                &mut self.restore_map
-                            ).unwrap();
-                            self.break_list.clear();
-                        }
-
                         if let Ok(status) = tracee.wake_up(&self.restore_map) {
                             use crate::inferior::Status;
                             match status {
@@ -140,9 +132,18 @@ impl Debugger {
                                     let line = DwarfData::get_line_from_addr(&self.debug_data, rip);
                                     if let Some(i) = line {
                                         println!("Stopped at: {}", i);
+                                        println!("%rip = {:#x}", rip);
                                     }
                                 },
                             }
+                        }
+                        
+                        if !self.break_list.is_empty() {
+                            tracee.set_breakpoint(
+                                &self.break_list, 
+                                &mut self.restore_map
+                            ).unwrap();
+                            self.break_list.clear();
                         }
                     }
                 }
