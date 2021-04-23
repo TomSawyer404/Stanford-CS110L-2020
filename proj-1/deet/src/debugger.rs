@@ -158,8 +158,28 @@ impl Debugger {
                     {
                         &br_arg[3..]
                     } else {
-                        //&br_arg
-                        println!("Invalid address");
+                        // for milestone7
+                        let br_addr: Option<usize>;
+                        if let Ok(i) = br_arg.parse::<usize>() {
+                            br_addr = DwarfData::get_addr_for_line(
+                                &self.debug_data, 
+                                None, 
+                                i
+                            );
+                        } else {
+                            br_addr = DwarfData::get_addr_for_function(
+                                &self.debug_data, 
+                                None, 
+                                &br_arg[..]
+                            );
+                        }
+                        if let None = br_addr {
+                            eprintln!("Invalid breakpoint!");
+                            continue;
+                        }
+                        self.break_list.push( br_addr.unwrap() );
+                        println!("Set a breakpoint at {:#x}", 
+                                 self.break_list.last().unwrap());
                         continue;
                     };
                     let br_addr = usize::from_str_radix(addr_without_0x, 16).unwrap();
