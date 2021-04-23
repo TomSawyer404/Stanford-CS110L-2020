@@ -1,6 +1,8 @@
 mod debugger;
 mod debugger_command;
 mod inferior;
+mod dwarf_data;     // for milestone3
+mod gimli_wrapper;  // for milestone3
 
 use crate::debugger::Debugger;
 use nix::sys::signal::{signal, SigHandler, Signal};
